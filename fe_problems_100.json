@@ -138,8 +138,7 @@
     "statement": "In a right triangle, the hypotenuse is 10 and one angle is 30 degrees. Find the length of the Opposite Side ($x$).",
     "targets": { "x": 5.0 },
     "required_units": [""]
-  }
-  [
+  },
   {
     "id": "M_1.5_1",
     "category": "Mathematics: Statistics",
@@ -349,8 +348,7 @@
     "statement": "A motor lifts a 100 kg mass at a constant speed of 2 m/s. Find the Power ($P$) required. Use $g = 9.81 m/s^2$.",
     "targets": { "P": 1962.0 },
     "required_units": ["w"]
-  }
-    [
+  },
   {
     "id": "M_1.9_1",
     "category": "Mathematics: Differential Calculus",
@@ -420,8 +418,7 @@
     "statement": "A 1000 kg car moving at 10 m/s collides with and sticks to a stationary 2000 kg truck. Find the final velocity ($v_f$) of the wreckage.",
     "targets": { "v_f": 3.33 },
     "required_units": ["m/s"]
-  }
-[
+  },
   {
     "id": "M_1.14_1",
     "category": "Mathematics: Probability",
@@ -563,3 +560,4 @@
     "required_units": [""]
   }      
 ]
+
