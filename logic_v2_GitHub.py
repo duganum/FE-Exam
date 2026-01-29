@@ -13,7 +13,7 @@ def get_gemini_model(system_instruction):
         genai.configure(api_key=api_key)
         # Using 1.5 Flash for high speed and reliability in tutor apps
         return genai.GenerativeModel(
-            model_name='models/gemini-1.5-flash', 
+            model_name='models/gemini-2.0-flash', 
             system_instruction=system_instruction
         )
     except Exception as e:
@@ -106,3 +106,4 @@ def analyze_and_send_report(user_name, topic_title, chat_history):
         print(f"SMTP Error: {e}")
     
     return report_text
+
