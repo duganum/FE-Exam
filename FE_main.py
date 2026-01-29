@@ -32,108 +32,85 @@ PROBLEM_BANK = [
     }
 ]
 
-# Add placeholders for the remaining problems to match your 30-problem count
+# Populate remaining 30 problems
 for i in range(4, 31):
     cat = ["Mathematics", "Engineering Econ", "Ethics", "Statics", "Fluid Mechanics"][i % 5]
     PROBLEM_BANK.append({
         "id": i,
         "category": cat,
-        "question": f"FE Practice Problem #{i}: Given the parameters for this {cat} system, solve for the primary unknown.",
+        "question": f"FE Practice Problem #{i}: Solve the {cat} unknown using Handbook formulas.",
         "options": ["Correct Option", "Incorrect B", "Incorrect C", "Incorrect D"],
         "correctAnswer": "Correct Option",
-        "explanation": "Use the FE Reference Handbook formulas for this category to solve."
+        "explanation": "Reference the FE Handbook for this category."
     })
 
 # ==========================================
-# SECTION 2: APP CONFIG & STYLING
+# SECTION 2: APP CONFIG & STATE
 # ==========================================
 st.set_page_config(page_title="FE Exam AI Tutor", layout="wide")
 
-# Custom CSS to mimic your React UI
-st.markdown("""
-    <style>
-    .main { background-color: #f8fafc; }
-    .stButton>button { width: 100%; border-radius: 12px; height: 3em; font-weight: bold; }
-    .tamu-header { background-color: white; padding: 1.5rem; border-bottom: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 2rem; }
-    </style>
-    """, unsafe_allow_html=True)
-
-# ==========================================
-# SECTION 3: SESSION STATE
-# ==========================================
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "active_id" not in st.session_state:
     st.session_state.active_id = 1
 
 # ==========================================
-# SECTION 4: SIDEBAR & NAVIGATION
+# SECTION 3: SIDEBAR
 # ==========================================
 with st.sidebar:
-    st.markdown("### 📚 30 Practice Problems")
+    st.markdown("### 📚 FE Practice Problems")
     for prob in PROBLEM_BANK:
         if st.button(f"Problem {prob['id']}: {prob['category']}", key=f"btn_{prob['id']}"):
             st.session_state.active_id = prob['id']
-            st.session_state.messages = [{"role": "assistant", "content": f"Ready for this {prob['category']} challenge? Ask me for a hint!"}]
+            st.session_state.messages = [{"role": "assistant", "content": f"I'm ready to help with this {prob['category']} problem. What's your first step?"}]
             st.rerun()
 
 # ==========================================
-# SECTION 5: MAIN INTERFACE
+# SECTION 4: MAIN INTERFACE
 # ==========================================
 current_prob = PROBLEM_BANK[st.session_state.active_id - 1]
 
-# Header
-st.markdown(f"""
-    <div class="tamu-header">
-        <h1 style='margin:0; color:#1e40af;'>FE Exam AI Tutor</h1>
-        <p style='margin:0; color:#64748b; font-weight:bold; font-size:12px;'>TAMU-CC ENGINEERING | DR. DUGAN UM</p>
-    </div>
-    """, unsafe_allow_html=True)
+st.markdown(f"## {current_prob['category']} - Problem {current_prob['id']}")
+st.subheader(current_prob['question'])
 
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    st.markdown(f"**Category:** `{current_prob['category']}`")
-    st.subheader(current_prob['question'])
-    
-    # Quiz logic
     user_choice = st.radio("Select an option:", current_prob['options'], index=None)
-    
     if user_choice:
         if user_choice == current_prob['correctAnswer']:
             st.success("Correct!")
-            with st.expander("See Explanation"):
+            with st.expander("View Full Solution"):
                 st.write(current_prob['explanation'])
         else:
-            st.error("Not quite. Check your calculations or ask the tutor for a hint.")
+            st.error("Incorrect. Use the chat for a hint!")
 
 with col2:
-    st.markdown("### 🧠 AI Engineering Tutor")
-    
-    # Chat Container
-    chat_container = st.container(height=400)
-    for message in st.session_state.messages:
-        with chat_container.chat_message(message["role"]):
-            st.markdown(message["content"])
+    st.markdown("### 🧠 AI Tutor Chat")
+    chat_container = st.container(height=450)
+    for msg in st.session_state.messages:
+        chat_container.chat_message(msg["role"]).write(msg["content"])
 
-    # Chat Input
     if prompt := st.chat_input("Ask for a hint..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with chat_container.chat_message("user"):
-            st.markdown(prompt)
+        chat_container.chat_message("user").write(prompt)
 
-        # AI Logic (Gemini API Integration)
-        # Note: You'll need to add your API Key in Streamlit Secrets
+        # GEMINI API CALL
         with chat_container.chat_message("assistant"):
-            response_placeholder = st.empty()
-            response_placeholder.markdown("Thinking...")
+            placeholder = st.empty()
+            placeholder.markdown("Thinking...")
             
-            # This is where your API call logic goes. For now, a placeholder:
-            time.sleep(1)
-            response = f"To solve this {current_prob['category']} problem, remember to check the FE Reference Handbook section on {current_prob['category']}. Look for the primary variables provided in the prompt."
+            # Replace with your actual key
+            API_KEY = "YOUR_GEMINI_API_KEY_HERE" 
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
             
-            response_placeholder.markdown(response)
-            st.session_state.messages.append({"role": "assistant", "content": response})
-
-st.markdown("---")
-st.caption("NCEES FE Mechanical Standard | Instinct Economy AI Lab")
+            sys_instr = f"Tutor rules: Never give the answer. Use first principles. Problem: {current_prob['question']}. Correct: {current_prob['correctAnswer']}."
+            
+            try:
+                payload = {"contents": [{"parts": [{"text": f"{sys_instr}\nUser: {prompt}"}]}]}
+                res = requests.post(url, json=payload, timeout=10)
+                ai_text = res.json()['candidates'][0]['content']['parts'][0]['text']
+                placeholder.markdown(ai_text)
+                st.session_state.messages.append({"role": "assistant", "content": ai_text})
+            except:
+                placeholder.error("Connection error. Is the API Key valid?")
