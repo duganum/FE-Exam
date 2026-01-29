@@ -548,7 +548,7 @@
   {
     "id": "T_1.13_1",
     "category": "Thermodynamics: Internal Energy",
-    "statement": "For an ideal gas, if the temperature increases from 300 K to 350 K and $c_v = 0.718 kJ/kg \cdot K$, find the change in specific internal energy ($\\Delta u$).",
+    "statement": "For an ideal gas, if the temperature increases from 300 K to 350 K and $c_v = 0.718 kJ/kg $\\cdot K$, find the change in specific internal energy ($\\Delta u$).",
     "targets": { "u": 35.9 },
     "required_units": ["kj/kg"]
   },
@@ -560,4 +560,5 @@
     "required_units": [""]
   }      
 ]
+
 
