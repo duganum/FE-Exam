@@ -7,7 +7,7 @@ from logic_v2_GitHub import get_gemini_model, load_problems, check_numeric_match
 from render_v2_GitHub import render_lecture_visual
 
 # 1. Page Configuration
-st.set_page_config(page_title="Engineering Statics", layout="wide")
+st.set_page_config(page_title="FE Exam AI Tutor", layout="wide")
 
 # 2. CSS: Minimal Button Height (60px) and UI consistency
 st.markdown("""
@@ -38,7 +38,7 @@ PROBLEMS = load_problems()
 
 # --- Page 0: Name Entry ---
 if st.session_state.user_name is None:
-    st.title("🛡️ Engineering Mechanics Portal")
+    st.title("🎓 FE Exam Prep Portal")
     st.markdown("### Texas A&M University - Corpus Christi")
     with st.form("name_form"):
         name_input = st.text_input("Enter your Full Name to begin")
@@ -51,32 +51,31 @@ if st.session_state.user_name is None:
     st.stop()
 
 # --- Page 1: Main Menu ---
-# --- Page 1: Main Menu ---
 if st.session_state.page == "landing":
-    st.title("🏗️ Engineering Statics")  # Heading moved to the top
-    st.subheader(f"Welcome, {st.session_state.user_name}!") # Welcome moved below
-    st.info("Texas A&M University - Corpus Christi | Dr. Dugan Um")
+    st.title("🚀 FE Exam AI Tutor") 
+    st.subheader(f"Welcome, {st.session_state.user_name}!")
+    st.info("Texas A&M University - Corpus Christi | Instinct Economy AI Lab | Dr. Dugan Um")
     
-    # Section A: Interactive Lectures (Statics Topics)
+    # Section A: Interactive Lectures (Core FE Mechanical Topics)
     st.markdown("---")
     st.subheader("💡 Interactive Learning Agents")
     col_l1, col_l2, col_l3, col_l4 = st.columns(4)
     lectures = [
-        ("Free Body Diagram", "S_1.1"), 
-        ("Truss", "S_1.2"), 
-        ("Geometric Properties", "S_1.3"),
-        ("Equilibrium", "S_1.4")
+        ("Dynamics & Kinematics", "D_1.1"), 
+        ("Thermodynamics", "T_1.1"), 
+        ("Fluid Mechanics", "FM_1.1"),
+        ("Mechanics of Materials", "MM_1.1")
     ]
     for i, (name, pref) in enumerate(lectures):
         with [col_l1, col_l2, col_l3, col_l4][i]:
-            if st.button(f"🎓 Lecture: {name}", key=f"lec_{pref}", use_container_width=True):
+            if st.button(f"🎓 Lab: {name}", key=f"lec_{pref}", use_container_width=True):
                 st.session_state.lecture_topic = name
                 st.session_state.page = "lecture"
                 st.rerun()
 
-    # Section B: Practice Problems
+    # Section B: Practice Problems (Aggregated by FE Category)
     st.markdown("---")
-    st.subheader("📝 Practice Problems")
+    st.subheader("📝 FE Practice Problems (NCEES Standards)")
     categories = {}
     for p in PROBLEMS:
         cat_main = p.get('category', 'General').split(":")[0].strip()
@@ -109,12 +108,13 @@ elif st.session_state.page == "chat":
     with cols[0]:
         st.subheader(f"📌 {prob['category']}")
         st.info(prob['statement'])
-        st.image(render_problem_diagram(p_id), width=400)
+        # Simplified rendering logic for broader FE topics
+        st.write("*(Reference diagrams would appear here)*")
     
     with cols[1]:
         st.metric("Variables Found", f"{len(solved)} / {len(prob['targets'])}")
         st.progress(len(solved) / len(prob['targets']) if len(prob['targets']) > 0 else 0)
-        feedback = st.text_area("Notes for Dr. Um:", placeholder="What was the hardest part?")
+        feedback = st.text_area("Notes for the Professor:", placeholder="What concept was most challenging?")
         if st.button("⬅️ Submit Session", use_container_width=True):
             history_text = ""
             if p_id in st.session_state.chat_sessions:
@@ -127,9 +127,10 @@ elif st.session_state.page == "chat":
 
     if p_id not in st.session_state.chat_sessions:
         sys_prompt = (
-            f"You are the Engineering Tutor for {st.session_state.user_name} at TAMUCC. "
+            f"You are the professional FE Exam Tutor for {st.session_state.user_name} at TAMUCC. "
             f"Context: {prob['statement']}. Use LaTeX for all math. "
-            "STRICT RULES: 1. Do NOT answer your own questions. 2. NEVER ask 'what diagram' questions. "
+            "STRICT RULES: 1. Use the Socratic method to guide the student. "
+            "2. Reference the FE Reference Handbook values where applicable. "
             "3. Respond ONLY after the student types something. 4. Use English only."
         )
         model = get_gemini_model(sys_prompt)
@@ -140,7 +141,7 @@ elif st.session_state.page == "chat":
             st.markdown(message.parts[0].text)
 
     if not st.session_state.chat_sessions[p_id].history:
-        st.write("👋 **Tutor Ready.** Please describe the first step of your analysis to begin.")
+        st.write("👋 **FE Tutor Ready.** How would you begin solving this using the FE Reference Handbook?")
 
     if user_input := st.chat_input("Your analysis..."):
         for target, val in prob['targets'].items():
@@ -156,61 +157,61 @@ elif st.session_state.page == "lecture":
     
     with col_sim:
         params = {}
-        if topic == "Free Body Diagram":
-            params['force'] = st.slider("Force Magnitude (N)", 10, 100, 50)
-            params['theta'] = st.slider("Angle (degrees)", 0, 90, 45)
-        elif topic == "Truss":
-            params['load'] = st.slider("Vertical Load (N)", 10, 100, 50)
-        elif topic == "Geometric Properties":
-            params['width'] = st.slider("Rectangle Width", 10, 80, 40)
-            params['height'] = st.slider("Rectangle Height", 10, 80, 60)
-        elif topic == "Equilibrium":
-            params['w'] = st.slider("Counterweight Force (N)", 10, 100, 50)
-            params['d'] = st.slider("Moment Arm Distance (m)", 10, 80, 40)
+        # Dynamic parameter sliders for different FE topics
+        if "Dynamics" in topic:
+            params['mass'] = st.slider("Mass (kg)", 1, 100, 50)
+            params['velocity'] = st.slider("Initial Velocity (m/s)", 0, 50, 10)
+        elif "Thermodynamics" in topic:
+            params['temp'] = st.slider("Temperature (K)", 200, 500, 300)
+        elif "Fluid Mechanics" in topic:
+            params['height'] = st.slider("Fluid Head Height (m)", 1, 50, 20)
+        elif "Mechanics of Materials" in topic:
+            params['load'] = st.slider("Axial Load (kN)", 1, 500, 100)
         
-        st.image(render_lecture_visual(topic, params))
+        # Placeholder for dynamic rendering based on topic
+        st.info(f"Visualizing physics for: {topic}")
         
         st.markdown("---")
         st.subheader("📊 Session Completion")
-        lecture_feedback = st.text_area("Final Summary:", placeholder="Summarize the governing equations.")
+        lecture_feedback = st.text_area("Key Takeaways:", placeholder="Summarize the governing laws discussed.")
         
-        if st.button("🚀 Submit Lecture Report", use_container_width=True):
+        if st.button("🚀 Submit Lab Report", use_container_width=True):
             history_text = ""
             if "lecture_session" in st.session_state and st.session_state.lecture_session:
                 for msg in st.session_state.lecture_session.history:
                     role = "Professor" if msg.role == "model" else "Student"
                     history_text += f"{role}: {msg.parts[0].text}\n"
             
-            with st.spinner("Analyzing mastery..."):
-                report = analyze_and_send_report(st.session_state.user_name, f"LECTURE: {topic}", history_text + f"\n--- STUDENT FEEDBACK ---\n{lecture_feedback}")
+            with st.spinner("Analyzing performance..."):
+                report = analyze_and_send_report(st.session_state.user_name, f"FE_LAB: {topic}", history_text + f"\n--- STUDENT SUMMARY ---\n{lecture_feedback}")
                 st.session_state.last_report = report
                 st.session_state.page = "report_view"; st.rerun()
 
-        if st.button("🏠 Exit", use_container_width=True):
+        if st.button("🏠 Exit to Menu", use_container_width=True):
             st.session_state.lecture_session = None; st.session_state.page = "landing"; st.rerun()
 
     with col_chat:
-        st.subheader("💬 Socratic Discussion")
+        st.subheader("💬 Conceptual Discussion")
         if "lecture_session" not in st.session_state or st.session_state.lecture_session is None:
             sys_msg = (
-                f"You are a Professor at TAMUCC teaching {topic}. Respond only in English and use LaTeX. "
-                "Guide the student through the vector derivations or equations using the Socratic method. "
-                "Do not give answers immediately. Ask one targeted question at a time."
+                f"You are a Professor at TAMUCC teaching {topic} for FE Prep. Respond only in English and use LaTeX. "
+                "Guide the student through first principles. "
+                "Do not give answers. Ask one targeted question at a time about the variables shown in the lab."
             )
             model = get_gemini_model(sys_msg)
             st.session_state.lecture_session = model.start_chat(history=[])
-            st.session_state.lecture_session.send_message(f"Hello {st.session_state.user_name}. Looking at the {topic} lab simulation, what do you observe about the relationship between the forces or geometry shown?")
+            st.session_state.lecture_session.send_message(f"Hello {st.session_state.user_name}. Based on the {topic} parameters, what happens to the output if we increase the primary input?")
         
         for msg in st.session_state.lecture_session.history:
             with st.chat_message("assistant" if msg.role == "model" else "user"):
                 st.markdown(msg.parts[0].text)
         
-        if lecture_input := st.chat_input("Discuss the physics..."):
+        if lecture_input := st.chat_input("Discuss the theory..."):
             st.session_state.lecture_session.send_message(lecture_input); st.rerun()
 
 # --- Page 4: Report View ---
 elif st.session_state.page == "report_view":
-    st.title("📊 Performance Summary")
+    st.title("📊 Mastery Report")
     st.markdown(st.session_state.get("last_report", "No report available."))
-    if st.button("Return to Main Menu"):
+    if st.button("Return to Dashboard"):
         st.session_state.page = "landing"; st.rerun()
