@@ -103,13 +103,30 @@ elif st.session_state.page == "chat":
                 st.session_state.page = "report_view"
                 st.rerun()
         
-        if st.button("🔄 Skip / New Problem", use_container_width=True):
-            st.session_state.current_prob = random.choice(PROBLEMS)
-            # Clear current chat session for the new problem
-            if p_id in st.session_state.chat_sessions:
-                del st.session_state.chat_sessions[p_id]
+# --- 수정된 New Problem (Skip) 버튼 로직 (간편 모니터링용) ---
+        if st.button("New Problem (Skip)", use_container_width=True):
+            # 1. 전송할 최소 정보 구성
+            student_name = st.session_state.user_name
+            problem_id = prob['id']
+            category = prob['category']
+            
+            # 2. 교수님께 간단한 보고서 전송 (이름과 문항 정보만)
+            with st.spinner("Recording skip event..."):
+                # 간결한 리포트 작성을 위한 텍스트 구성
+                simple_report = f"Student '{student_name}' skipped the problem: {problem_id} ({category})."
+                
+                # 기존 함수 호출 (주제와 간단한 내용만 전송)
+                analyze_and_send_report(
+                    user_name=student_name, 
+                    topic_title=f"SKIP EVENT: {problem_id}", 
+                    chat_history=simple_report
+                )
+            
+            # 3. 새로운 랜덤 문제 선택 후 리런
+            prefix = prob['id'].split('_')[0] + "_" + prob['id'].split('_')[1]
+            cat_probs = [p for p in PROBLEMS if p['id'].startswith(prefix)]
+            st.session_state.current_prob = random.choice(cat_probs)
             st.rerun()
-
     # Chat Logic Integration
     if p_id not in st.session_state.chat_sessions:
         sys_prompt = (
@@ -141,3 +158,4 @@ elif st.session_state.page == "report_view":
         st.session_state.current_prob = None
         st.session_state.page = "landing"
         st.rerun()
+
