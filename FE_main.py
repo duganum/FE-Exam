@@ -108,34 +108,45 @@ elif st.session_state.page == "chat":
                 st.session_state.last_report = report
                 st.session_state.page = "report_view"
                 st.rerun()
-        
-        # --- Fixed New Problem (Skip) Logic ---
+                
+   # --- 학생 모니터링 전용 Skip 버튼 (간소화 버전) ---
         if st.button("New Problem (Skip)", use_container_width=True):
             student_name = st.session_state.user_name
+            current_prob_id = st.session_state.current_prob['id']
             
-            # 1. Quick Monitoring Email (Name and ID only)
-            with st.spinner("Recording skip event..."):
-                simple_report = f"Student '{student_name}' skipped the problem: {p_id} ({prob['category']})."
-                analyze_and_send_report(
-                    user_name=student_name, 
-                    topic_title=f"SKIP: {student_name} - {p_id}", 
-                    chat_history=simple_report
-                )
+            # 1. 간단한 이메일 발송 (AI 분석 생략)
+            import smtplib
+            from email.mime.text import MIMEText
             
-            # 2. Transition Logic
-            # Identify category prefix (e.g., CAL_1)
-            parts = p_id.split('_')
+            try:
+                sender = st.secrets["EMAIL_SENDER"]
+                password = st.secrets["EMAIL_PASSWORD"]
+                receiver = "dugan.um@gmail.com"
+                
+                # 메일 본문에 이름과 문항 정보만 포함
+                msg_body = f"Student Name: {student_name}\nProblem ID: {current_prob_id}"
+                msg = MIMEText(msg_body)
+                msg['Subject'] = f"SKIP: {student_name} - {current_prob_id}"
+                msg['From'] = sender
+                msg['To'] = receiver
+                
+                server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+                server.login(sender, password)
+                server.send_message(msg)
+                server.quit()
+            except Exception as e:
+                st.error(f"Email monitoring failed: {e}")
+
+            # 2. 다음 문제로 이동
+            parts = current_prob_id.split('_')
             prefix = f"{parts[0]}_{parts[1]}"
             cat_probs = [p for p in PROBLEMS if p['id'].startswith(prefix)]
             
             if cat_probs:
-                # Clear previous session data for the skipped problem
-                if p_id in st.session_state.chat_sessions:
-                    del st.session_state.chat_sessions[p_id]
-                
-                # Assign new problem and rerun
+                if current_prob_id in st.session_state.chat_sessions:
+                    del st.session_state.chat_sessions[current_prob_id]
                 st.session_state.current_prob = random.choice(cat_probs)
-                st.rerun()
+                st.rerun()     
 
     # Chat Logic Integration
     if p_id not in st.session_state.chat_sessions:
@@ -166,3 +177,4 @@ elif st.session_state.page == "report_view":
         st.session_state.current_prob = None
         st.session_state.page = "landing"
         st.rerun()
+
