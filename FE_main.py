@@ -109,22 +109,22 @@ elif st.session_state.page == "chat":
                 st.session_state.page = "report_view"
                 st.rerun()
                 
-# --- [Landing 로직 응용] 페이지 강제 리셋 방식 ---
+# --- [최종 수정] Start Random Practice 로직 직접 이식 ---
         if st.button("New Problem (Skip)", use_container_width=True):
-            # 1. 이전 세션 데이터 정리
-            old_id = st.session_state.current_prob['id']
-            if old_id in st.session_state.chat_sessions:
-                del st.session_state.chat_sessions[old_id]
-            if old_id in st.session_state.grading_data:
-                del st.session_state.grading_data[old_id]
-
-            # 2. 강제로 Landing 페이지로 이동시킨 후 캐시 삭제
-            st.session_state.current_prob = None  # 현재 문제 비우기
-            st.session_state.page = "landing"      # 메인으로 이동
-            st.cache_data.clear()
-            
-            # 3. 즉시 리런 (이제 Landing 페이지에서 새 문제를 고를 수 있는 상태가 됨)
-            st.rerun()
+            if PROBLEMS:
+                # 1. 이전 문제의 세션 데이터 정리 (충돌 방지)
+                old_id = st.session_state.current_prob['id']
+                if old_id in st.session_state.chat_sessions:
+                    del st.session_state.chat_sessions[old_id]
+                
+                # 2. [핵심] 런처 버튼과 동일하게 전체 문제 중 하나를 랜덤 선택
+                st.session_state.current_prob = random.choice(PROBLEMS)
+                
+                # 3. 페이지 상태는 'chat'으로 유지하면서 캐시만 비우고 리런
+                st.cache_data.clear()
+                st.rerun()
+            else:
+                st.error("Problem bank not found.")
                 
     # Chat Logic Integration
     if p_id not in st.session_state.chat_sessions:
@@ -155,6 +155,7 @@ elif st.session_state.page == "report_view":
         st.session_state.current_prob = None
         st.session_state.page = "landing"
         st.rerun()
+
 
 
 
