@@ -109,35 +109,22 @@ elif st.session_state.page == "chat":
                 st.session_state.page = "report_view"
                 st.rerun()
                 
-# --- [최종 수정] 화면 강제 갱신 로직 ---
+# --- [Landing 로직 응용] 페이지 강제 리셋 방식 ---
         if st.button("New Problem (Skip)", use_container_width=True):
-            current_prob_id = st.session_state.current_prob['id']
-            
-            # 1. 카테고리 접두사 추출 (예: CAL_1)
-            parts = current_prob_id.split('_')
-            prefix = f"{parts[0]}_{parts[1]}"
-            cat_probs = [p for p in PROBLEMS if p['id'].startswith(prefix)]
-            
-            if cat_probs:
-                # 2. 모든 세션 데이터 및 캐시 강제 초기화 (가장 중요)
-                # 이전 대화 세션 삭제
-                if current_prob_id in st.session_state.chat_sessions:
-                    del st.session_state.chat_sessions[current_prob_id]
-                
-                # 정답 데이터 초기화
-                if current_prob_id in st.session_state.grading_data:
-                    del st.session_state.grading_data[current_prob_id]
+            # 1. 이전 세션 데이터 정리
+            old_id = st.session_state.current_prob['id']
+            if old_id in st.session_state.chat_sessions:
+                del st.session_state.chat_sessions[old_id]
+            if old_id in st.session_state.grading_data:
+                del st.session_state.grading_data[old_id]
 
-                # 3. 새로운 랜덤 문제 할당
-                st.session_state.current_prob = random.choice(cat_probs)
-                
-                # 4. Streamlit 내부 캐시 메모리 완전 삭제
-                st.cache_data.clear()
-                
-                # 5. 즉시 페이지 새로고침
-                st.rerun()
-            else:
-                st.warning("No more problems found in this category.")
+            # 2. 강제로 Landing 페이지로 이동시킨 후 캐시 삭제
+            st.session_state.current_prob = None  # 현재 문제 비우기
+            st.session_state.page = "landing"      # 메인으로 이동
+            st.cache_data.clear()
+            
+            # 3. 즉시 리런 (이제 Landing 페이지에서 새 문제를 고를 수 있는 상태가 됨)
+            st.rerun()
                 
     # Chat Logic Integration
     if p_id not in st.session_state.chat_sessions:
@@ -168,6 +155,7 @@ elif st.session_state.page == "report_view":
         st.session_state.current_prob = None
         st.session_state.page = "landing"
         st.rerun()
+
 
 
 
