@@ -109,23 +109,46 @@ elif st.session_state.page == "chat":
                 st.session_state.page = "report_view"
                 st.rerun()
                 
-# --- [최종 수정] Start Random Practice 로직 직접 이식 ---
+# --- [최종 수정] 이메일 모니터링 후 즉시 랜덤 문제 전환 ---
         if st.button("New Problem (Skip)", use_container_width=True):
             if PROBLEMS:
-                # 1. 이전 문제의 세션 데이터 정리 (충돌 방지)
-                old_id = st.session_state.current_prob['id']
-                if old_id in st.session_state.chat_sessions:
-                    del st.session_state.chat_sessions[old_id]
+                student_name = st.session_state.user_name
+                current_prob_id = st.session_state.current_prob['id']
                 
-                # 2. [핵심] 런처 버튼과 동일하게 전체 문제 중 하나를 랜덤 선택
+                # 1. 교수님께 최소 정보만 직접 메일 발송 (이름, 문항 ID)
+                import smtplib
+                from email.mime.text import MIMEText
+                
+                try:
+                    sender = st.secrets["EMAIL_SENDER"]
+                    password = st.secrets["EMAIL_PASSWORD"]
+                    receiver = "dugan.um@gmail.com"
+                    
+                    msg = MIMEText(f"Student: {student_name}\nProblem ID: {current_prob_id}")
+                    msg['Subject'] = f"SKIP: {student_name} - {current_prob_id}"
+                    msg['From'] = sender
+                    msg['To'] = receiver
+                    
+                    # 3초 타임아웃을 설정해 메일 발송 지연이 화면 전환을 방해하지 않게 함
+                    with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=3) as server:
+                        server.login(sender, password)
+                        server.send_message(msg)
+                except Exception as e:
+                    # 메일 전송 실패 시 로그만 남기고 학생은 다음 문제로 넘김
+                    print(f"Monitoring Email Error: {e}")
+
+                # 2. 이전 세션 데이터 정리
+                if current_prob_id in st.session_state.chat_sessions:
+                    del st.session_state.chat_sessions[current_prob_id]
+                
+                # 3. [Start Random Practice 로직] 전체 문제 중 하나를 랜덤 선택
                 st.session_state.current_prob = random.choice(PROBLEMS)
                 
-                # 3. 페이지 상태는 'chat'으로 유지하면서 캐시만 비우고 리런
+                # 4. 화면 강제 새로고침
                 st.cache_data.clear()
                 st.rerun()
             else:
-                st.error("Problem bank not found.")
-                
+                st.error("Problem bank not found.")                
     # Chat Logic Integration
     if p_id not in st.session_state.chat_sessions:
         sys_prompt = (
@@ -155,6 +178,7 @@ elif st.session_state.page == "report_view":
         st.session_state.current_prob = None
         st.session_state.page = "landing"
         st.rerun()
+
 
 
 
