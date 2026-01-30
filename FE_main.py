@@ -109,53 +109,50 @@ elif st.session_state.page == "chat":
                 st.session_state.page = "report_view"
                 st.rerun()
                 
-# --- 학생 모니터링 및 즉시 전환 로직 ---
+# --- [수정] 즉각적인 화면 전환이 보장된 Skip 로직 ---
         if st.button("New Problem (Skip)", use_container_width=True):
             student_name = st.session_state.user_name
             current_prob_id = st.session_state.current_prob['id']
             
-            # 1. 교수님께 최소 정보만 직접 메일 발송 (AI 분석 생략)
-            import smtplib
-            from email.mime.text import MIMEText
-            
-            try:
-                sender = st.secrets["EMAIL_SENDER"]
-                password = st.secrets["EMAIL_PASSWORD"]
-                receiver = "dugan.um@gmail.com"
-                
-                # 본문: 이름과 문항 ID만 포함
-                msg_body = f"Student Name: {student_name}\nProblem ID: {current_prob_id}"
-                msg = MIMEText(msg_body)
-                msg['Subject'] = f"SKIP: {student_name} - {current_prob_id}"
-                msg['From'] = sender
-                msg['To'] = receiver
-                
-                server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-                server.login(sender, password)
-                server.send_message(msg)
-                server.quit()
-            except Exception as e:
-                # 메일 전송 실패 시 로그만 남기고 다음 단계 진행
-                print(f"Monitoring Email Error: {e}")
-
-            # 2. 다음 문제로 강제 전환 로직
-            # 현재 ID에서 카테고리 접두사(예: CAL_1) 추출
+            # 1. 다음 문제 후보군 확보
             parts = current_prob_id.split('_')
             prefix = f"{parts[0]}_{parts[1]}"
             cat_probs = [p for p in PROBLEMS if p['id'].startswith(prefix)]
             
             if cat_probs:
-                # 세션 데이터 정리 (이전 대화 세션 삭제)
+                # 2. 이메일 발송 (이메일 발송 때문에 화면이 멈추지 않도록 예외 처리 강화)
+                import smtplib
+                from email.mime.text import MIMEText
+                
+                try:
+                    sender = st.secrets["EMAIL_SENDER"]
+                    password = st.secrets["EMAIL_PASSWORD"]
+                    receiver = "dugan.um@gmail.com"
+                    
+                    msg = MIMEText(f"Student: {student_name}\nProblem ID: {current_prob_id}")
+                    msg['Subject'] = f"SKIP: {student_name} - {current_prob_id}"
+                    msg['From'] = sender
+                    msg['To'] = receiver
+                    
+                    # 타임아웃 설정을 추가하여 이메일 때문에 무한 대기하는 것을 방지
+                    with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=5) as server:
+                        server.login(sender, password)
+                        server.send_message(msg)
+                except Exception as e:
+                    # 메일 오류가 나더라도 학생 화면은 넘어가야 함
+                    st.write(f"", unsafe_allow_html=True)
+
+                # 3. 세션 데이터 초기화 및 강제 전환
                 if current_prob_id in st.session_state.chat_sessions:
                     del st.session_state.chat_sessions[current_prob_id]
                 
                 # 새로운 랜덤 문제 할당
                 st.session_state.current_prob = random.choice(cat_probs)
                 
-                # 중요: 강제로 페이지를 새로고침하여 다음 문제로 넘김
+                # [핵심] 모든 데이터를 바꾼 후 즉시 리런
                 st.rerun()
             else:
-                st.warning("해당 카테고리에 다른 문제가 없습니다.")
+                st.warning("No other problems in this category.")
                 
     # Chat Logic Integration
     if p_id not in st.session_state.chat_sessions:
@@ -186,5 +183,6 @@ elif st.session_state.page == "report_view":
         st.session_state.current_prob = None
         st.session_state.page = "landing"
         st.rerun()
+
 
 
