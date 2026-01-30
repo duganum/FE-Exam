@@ -109,24 +109,32 @@ elif st.session_state.page == "chat":
                 st.session_state.page = "report_view"
                 st.rerun()
                 
-# --- Optimized Screen Transition (Email Removed) ---
+# --- [최종 수정] 화면 강제 갱신 로직 ---
         if st.button("New Problem (Skip)", use_container_width=True):
             current_prob_id = st.session_state.current_prob['id']
             
-            # 1. Identify Category Prefix (e.g., CAL_1)
+            # 1. 카테고리 접두사 추출 (예: CAL_1)
             parts = current_prob_id.split('_')
             prefix = f"{parts[0]}_{parts[1]}"
             cat_probs = [p for p in PROBLEMS if p['id'].startswith(prefix)]
             
             if cat_probs:
-                # 2. Clear previous session data to prevent UI freezing
+                # 2. 모든 세션 데이터 및 캐시 강제 초기화 (가장 중요)
+                # 이전 대화 세션 삭제
                 if current_prob_id in st.session_state.chat_sessions:
                     del st.session_state.chat_sessions[current_prob_id]
                 
-                # 3. Assign a new random problem from the same category
+                # 정답 데이터 초기화
+                if current_prob_id in st.session_state.grading_data:
+                    del st.session_state.grading_data[current_prob_id]
+
+                # 3. 새로운 랜덤 문제 할당
                 st.session_state.current_prob = random.choice(cat_probs)
                 
-                # 4. Force immediate page refresh
+                # 4. Streamlit 내부 캐시 메모리 완전 삭제
+                st.cache_data.clear()
+                
+                # 5. 즉시 페이지 새로고침
                 st.rerun()
             else:
                 st.warning("No more problems found in this category.")
@@ -160,6 +168,7 @@ elif st.session_state.page == "report_view":
         st.session_state.current_prob = None
         st.session_state.page = "landing"
         st.rerun()
+
 
 
 
