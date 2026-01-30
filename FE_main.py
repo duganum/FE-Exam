@@ -109,12 +109,12 @@ elif st.session_state.page == "chat":
                 st.session_state.page = "report_view"
                 st.rerun()
                 
-   # --- 학생 모니터링 전용 Skip 버튼 (간소화 버전) ---
+# --- 학생 모니터링 및 즉시 전환 로직 ---
         if st.button("New Problem (Skip)", use_container_width=True):
             student_name = st.session_state.user_name
             current_prob_id = st.session_state.current_prob['id']
             
-            # 1. 간단한 이메일 발송 (AI 분석 생략)
+            # 1. 교수님께 최소 정보만 직접 메일 발송 (AI 분석 생략)
             import smtplib
             from email.mime.text import MIMEText
             
@@ -123,7 +123,7 @@ elif st.session_state.page == "chat":
                 password = st.secrets["EMAIL_PASSWORD"]
                 receiver = "dugan.um@gmail.com"
                 
-                # 메일 본문에 이름과 문항 정보만 포함
+                # 본문: 이름과 문항 ID만 포함
                 msg_body = f"Student Name: {student_name}\nProblem ID: {current_prob_id}"
                 msg = MIMEText(msg_body)
                 msg['Subject'] = f"SKIP: {student_name} - {current_prob_id}"
@@ -135,19 +135,28 @@ elif st.session_state.page == "chat":
                 server.send_message(msg)
                 server.quit()
             except Exception as e:
-                st.error(f"Email monitoring failed: {e}")
+                # 메일 전송 실패 시 로그만 남기고 다음 단계 진행
+                print(f"Monitoring Email Error: {e}")
 
-            # 2. 다음 문제로 이동
+            # 2. 다음 문제로 강제 전환 로직
+            # 현재 ID에서 카테고리 접두사(예: CAL_1) 추출
             parts = current_prob_id.split('_')
             prefix = f"{parts[0]}_{parts[1]}"
             cat_probs = [p for p in PROBLEMS if p['id'].startswith(prefix)]
             
             if cat_probs:
+                # 세션 데이터 정리 (이전 대화 세션 삭제)
                 if current_prob_id in st.session_state.chat_sessions:
                     del st.session_state.chat_sessions[current_prob_id]
+                
+                # 새로운 랜덤 문제 할당
                 st.session_state.current_prob = random.choice(cat_probs)
-                st.rerun()     
-
+                
+                # 중요: 강제로 페이지를 새로고침하여 다음 문제로 넘김
+                st.rerun()
+            else:
+                st.warning("해당 카테고리에 다른 문제가 없습니다.")
+                
     # Chat Logic Integration
     if p_id not in st.session_state.chat_sessions:
         sys_prompt = (
@@ -177,4 +186,5 @@ elif st.session_state.page == "report_view":
         st.session_state.current_prob = None
         st.session_state.page = "landing"
         st.rerun()
+
 
