@@ -2,8 +2,6 @@ import streamlit as st
 import random
 import json
 import time
-import smtplib
-from email.mime.text import MIMEText
 from google.api_core import exceptions  # Added for robust rate limit handling
 from logic_v2_GitHub import get_gemini_model, load_problems, check_numeric_match, analyze_and_send_report
 
@@ -141,29 +139,16 @@ elif st.session_state.page == "chat":
                     st.session_state.api_busy = False
                     st.error("Professor busy (Rate Limit). Please wait 60 seconds.")
 
+        # REMOVED SMTP LOGIC FROM SKIP BUTTON TO PREVENT INCORRECT EMAILS
         if st.button("New Problem (Skip)", use_container_width=True):
             if PROBLEMS:
-                student_name = st.session_state.user_name
                 current_prob_id = st.session_state.current_prob['id']
                 
-                # 1. Send Skip Notification
-                try:
-                    sender = st.secrets["EMAIL_SENDER"]
-                    password = st.secrets["EMAIL_PASSWORD"]
-                    receiver = "dugan.um@gmail.com"
-                    msg = MIMEText(f"Student: {student_name}\nProblem ID: {current_prob_id}")
-                    msg['Subject'] = f"SKIP: {student_name} - {current_prob_id}"
-                    msg['From'] = sender
-                    msg['To'] = receiver
-                    with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=3) as server:
-                        server.login(sender, password)
-                        server.send_message(msg)
-                except Exception as e:
-                    print(f"Monitoring Email Error: {e}")
-
-                # 2. Cleanup and Reroll
+                # Cleanup current session
                 if current_prob_id in st.session_state.chat_sessions:
                     del st.session_state.chat_sessions[current_prob_id]
+                
+                # Reroll to a new random problem
                 st.session_state.current_prob = random.choice(PROBLEMS)
                 st.rerun()
 
@@ -174,10 +159,8 @@ elif st.session_state.page == "chat":
             f"REFERENCE DATA: {prob['statement']}. "
             "### CORE INSTRUCTIONS:\n"
             "1. LITERAL SOURCE OF TRUTH: Treat the REFERENCE DATA as the absolute authority. "
-            "If the problem specifies a non-standard coordinate system, a specific angle reference "
-            "(e.g., from the vertical), or unique constants, do not 'correct' them to standard conventions. "
-            "Accept the student's math if it aligns with this specific problem text.\n"
-            "2. GEOMETRIC VALIDATION: Before telling a student they are wrong, re-read the REFERENCE DATA.\n"
+            "If the problem specifies non-standard setups, do not 'correct' them.\n"
+            "2. GEOMETRIC VALIDATION: Before critiquing student math, re-verify data in the problem text.\n"
             "3. SOCRATIC METHOD: NEVER give a full explanation. Guide step-by-step.\n"
             "4. PRECISION: Use LaTeX for all math. Reference FE Handbook values where applicable."
         )
